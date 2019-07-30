@@ -1,0 +1,29 @@
+{
+  "name": "bcu30",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "fusuma start",
+    "build": "fusuma build",
+    "build:pdf": "fusuma pdf",
+    "live": "fusuma live",
+    "deploy": "yarn build && fusuma deploy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/euxn23/bcu30.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/euxn23/bcu30/issues"
+  },
+  "homepage": "https://github.com/euxn23/bcu30#readme",
+  "devDependencies": {
+    "@fusuma/task-live": "^1.9.3",
+    "@fusuma/task-pdf": "^1.9.3",
+    "fusuma": "^1.9.2"
+  }
+}

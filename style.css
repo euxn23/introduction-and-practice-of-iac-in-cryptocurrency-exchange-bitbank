@@ -1,0 +1,28 @@
+#webslides {
+  color: #ffffff;
+  background-color: #333333ff;
+  background-image: url("./images/slide-templates/bitbank-theme-line-dark.png");
+  background-size: cover;
+}
+
+h1 {
+  color: #23b592;
+}
+
+.title {
+  background-image: url("./images/slide-templates/bitbank-theme-title-dark.png");
+  background-size: cover;
+
+  text-align: right;
+  padding-right: 48px;
+}
+
+.bottom {
+  position: absolute;
+  right: 96px;
+  bottom: 96px;
+}
+
+.padding {
+  padding: 24px;
+}
