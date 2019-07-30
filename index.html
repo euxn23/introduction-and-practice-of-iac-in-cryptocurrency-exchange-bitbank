@@ -1,0 +1,178 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="Content-type" content="text/html; charset=utf-8"><meta name="theme-color" content="#3498db"><meta name="viewport" content="width=device-width,initial-scale=1"><title>slide</title><meta property="og:title" content="slide"><meta property="og:type" content="article"><link href="vendor.7.1726d34088c6c2e9bc27.css" rel="stylesheet"><link href="main.3.4ddbeeb675a33101d08f.css" rel="stylesheet"></head><body><div id="root"><svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" class="btn-sidebar" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg><article id="webslides"><section class="aligncenter title"><h1>仮想通貨取引所 bitbank の IaC の導入と実践</h1><div class="bottom"><h4>2019/07/30 X-Tech JAWS @AWS</h4></div></section><section class="aligncenter"><h1>Who?</h1><h4>Shogo Ishikawa (@koarakko99)</h4><br><img src="f7db44532d6aba2ab074ea24cf19dc14.webp" width="200"><br><ul><li><h4>Engineer @ Bitbank (2018/04-)</h4></li><li><h4>AWS Team</h4><ul><li><h5>CI/CD</h5></li><li><h5>Account management</h5></li><li><h5>Fargate, EB</h5></li></ul></li><li><h4>Favorite service</h4><ul><li><h5>CloudFormation, VPC</h5></li></ul></li></ul></section><section class="aligncenter"><h1>Who?</h1><h4>Yuta Suzuki (@euxn23)</h4><br><img src="6925ce247afde7754b849f53a4b5ae9a.webp" width="200"><br><ul><li><h4>Engineer @ Bitbank (2018/07-)</h4></li><li><h4>Developer Success Team</h4><ul><li><h5><a src="https://www.slideshare.net/bitbankink/developersuccess">DeveloperSuccess として何を届けられるか、様々な分野を経た先として何ができるか</a></h5></li><li><h5>AWS, DevOps, NodeJS Engineer</h5></li><li><h5>formerly, Application Engineer (Angular / TS Backend)</h5></li></ul></li><li><h4>Using AWS half a year</h4><ul><li><h5>awswakaran.tokyo co-founder (w/@potato4d)</h5></li></ul></li></ul></section><section class="aligncenter"><h1>bitbank とは</h1></section><section class="aligncenter image"><h1>ビットバンクは、ビットコインなどを扱う仮想通貨取引所です</h1><img src="6e3427a17c58c2b19dad56a334d54bbb.webp" width="1366"></section><section class="aligncenter image"><h1>bitbank.cc は Angular + TypeScript + AWS です</h1><img src="b16a3cb437cfa0d9c636829b8f906044.webp" width="1366"></section><section class="aligncenter"><h1>bitbank における活用状況</h1><img src="49ec59a52edd5adb51247ff89862e7e4.webp" width="600"><ul><li><h3>ElasticBeanstalk を利用した CodePipeline</h3></li><li><h3>CloudFormation StackSets を利用したアカウント管理</h3></li><li><h3>GitLab Runner の構築</h3></li></ul></section><section class="aligncenter"><h1>導入編</h1></section><section class="aligncenter"><h1>なぜ IaC を導入したのか？</h1><ul><li><h3>リソースが何が起因作られたかわからなくなった</h3></li><li><h3>同じ環境を手作業で作るのがシンドかった</h3></li><li><h3>環境を何回も作り直したかった。</h3></li></ul></section><section class="aligncenter"><h1>なぜ CloudFormation を採用したか？</h1><ul><li><h3>AWS 以外のクラウドの利用予定がなかった</h3></li><li><h3>AWS ドキュメントに慣れていたため</h3></li><li><h3>悩みを AWS サポートに相談できるから</h3></li></ul></section><section class="aligncenter"><h1>CloudFormation の習得するためにやったこと</h1><ul><li><h3>AWS CloudFormation の公式ドキュメントを読んだ</h3></li><li><h3>GitHub で他人のコードを読んだ</h3><ul><li><h4>Resource 名で検索するとヒットするのでそれを読んだ</h4></li></ul></li></ul></section><section class="aligncenter"><h1>特に習得しておくと便利なテクニック</h1><ul><li><h3>疑似パラメータを積極的に使う。</h3></li><li><h3>なるべく nested しておき、汎用性を高める</h3></li><li><h3>最初手作業で作って、describe の結果を利用</h3></li></ul></section><section class="aligncenter"><h1>疑似パラメータを積極的に使う。</h1></section><section class="aligncenter"><ul><li><h3>アカウント ID =&gt; AWS::AccountId</h3></li><li><h3>リージョン =&gt; AWS::Region</h3></li><li><h3>スタック ID =&gt; AWS::StackId など</h3></li></ul></section><section class="aligncenter"><h1>なるべく nested しておき、汎用性を高める</h1><pre><code class="language-yaml">Resources:
+  IamRole:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ../../components/iam.yml
+      Parameters:
+        IamPolicy: !Ref IamPolicy
+
+  MyInstance:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ../../components/ec2.yml
+      Parameters:
+        SubnetId: !Ref SubnetId
+        ImageId: !Ref ImageId
+        InstanceType: !Ref InstanceType
+        InstanceName: MyInstance
+        KeyName: !Ref KeyName
+        IamRole: !GetAtt IamRole.Outputs.MyInstanceProfile
+        SecurityGroupId: !Ref SecurityGroupId
+</code></pre></section><section class="aligncenter"><h1>最初手作業で作って、describe の結果を利用</h1></section><section class="aligncenter"><pre><code class="language-json">$ aws codepipeline get-pipeline
+...
+{
+    &quot;pipeline&quot;: {
+        &quot;name&quot;: &quot;test&quot;,
+        &quot;roleArn&quot;: &quot;arn:aws:iam::xxxxxxxxxxxx:role/dev-test-codepipeline&quot;,
+        &quot;artifactStore&quot;: {
+            &quot;type&quot;: &quot;S3&quot;,
+            &quot;location&quot;: &quot;testbucket&quot;
+        },
+        &quot;stages&quot;: [
+            {
+                &quot;name&quot;: &quot;Source&quot;,
+                &quot;actions&quot;: [
+                    {
+                        &quot;name&quot;: &quot;App&quot;,
+                        &quot;actionTypeId&quot;: {
+                            &quot;category&quot;: &quot;Source&quot;,
+                            &quot;owner&quot;: &quot;AWS&quot;,
+                            &quot;provider&quot;: &quot;CodeCommit&quot;,
+                            &quot;version&quot;: &quot;1&quot;
+                        },
+                        &quot;runOrder&quot;: 1,
+                        &quot;configuration&quot;: {
+                            &quot;BranchName&quot;: &quot;dev&quot;,
+                            &quot;RepositoryName&quot;: &quot;testrepo&quot;
+                        },
+                        &quot;outputArtifacts&quot;: [
+                            {
+                                &quot;name&quot;: &quot;App&quot;
+                            }
+                        ],
+                        &quot;inputArtifacts&quot;: []
+                    }
+                ]
+            },
+...
+</code></pre></section><section class="aligncenter"><p>CLI の結果を転記する</p><pre><code class="language-yaml">Pipeline:
+  Type: AWS::CodePipeline::Pipeline
+  Properties:
+    Name: !Ref ApplicationName
+    RoleArn: !GetAtt CodePipelineServiceRole.Arn
+    ArtifactStore:
+      Type: S3
+      Location: testbucket
+    Stages:
+      - Name: Source
+        Actions:
+          - Name: App
+            ActionTypeId:
+              Category: Source
+              Owner: AWS
+              Version: 1
+              Provider: CodeCommit
+            Configuration:
+              RepositoryName: testrepo
+              BranchName: dev
+            OutputArtifacts:
+              - Name: App
+            RunOrder: 1
+</code></pre></section><section class="aligncenter"><h1>クロススタック参照は使わなかった</h1><p>以下のような記述</p><pre><code class="language-yaml">Outputs:
+  WebSG:
+    Description: Service VPC
+    Value: !Ref ServiceVPC
+    Export:
+      Name: &#x27;stack-service-vpc&#x27;
+</code></pre></section><section class="aligncenter"><h1>使わなかった理由</h1><ul><li><h3>クロススタック参照の値を変更がしづらい</h3></li><li><h4>テスト時などで値を変えたい</h4></li></ul></section><section class="aligncenter"><h1>ParameterStore を使うメリット</h1><ul><li><h3>値の変換が簡単</h3></li><li><h3>一覧で見やすい</h3></li></ul></section><section class="aligncenter"><h1>代わりに ParameterStore に値を入れた</h1><p>SG の ARN を ParameterStore に格納</p><pre><code class="language-yaml">Resources:
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: test-sg
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: &#x27;-1&#x27;
+          CidrIp: 0.0.0.0/0
+
+  SecurityGroupIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: test-sg
+      Type: String
+      Value: !Ref InstanceSecurityGroup
+</code></pre><h1>取得時</h1><pre><code class="language-yaml">AWSTemplateFormatVersion: &#x27;2010-09-09&#x27;
+Description: Main template.
+
+Parameters:
+  SecurityGroupId:
+    Type: AWS::SSM::Parameter::Value&lt;String&lt;AWS::EC2::SecurityGroup::Id&gt;&gt;
+    Default: test-sg
+</code></pre></section><section class="aligncenter"><h1>そのほか、CloudFormation で苦労したところ</h1><ul><li><h3>サービスの制約</h3><ul><li><h4>文字数制限</h4></li></ul></li><li><h3>IAM 権限の不足</h3><ul><li><h4>権限を厳密に書きすぎて、必要な権限が足りない</h4></li></ul></li><li><h3>全部が対応している訳ではない。</h3></li></ul></section><section class="aligncenter"><h1>導入編 まとめ</h1><ul><li>CloudFormation は最初にドキュメントを読んで全体をつかんだ方がよい</li><li>実際に作るときは、AWS CLI を使うことで簡単に Resource の値を入れられる</li></ul></section><section class="aligncenter"><h1>実践編</h1></section><section class="aligncenter"><h1>Q. CloudFormation の実行、どうしてますか？</h1></section><section class="aligncenter"><h1>A. make？</h1><ul><li>make は冪等性担保と相性が良い</li><li>make は複雑な引数処理ができる</li><li>make は使い回しができる</li></ul></section><section class="aligncenter"><h1>＿人人人人人＿</h1><h1>＞　できる　＜</h1><h1>￣ Y^Y^Y^Y ￣</h1><div class="padding"></div><h2>(簡単とは言っていない)</h2></section><section class="aligncenter"><h1>Q. make では too much なケースでは？</h1></section><section class="aligncenter"><h1>A. npm script</h1></section><section class="aligncenter"><h1>bitbank は JS が社内標準語なので</h1><h1>package.json(npm run) で一部管理しています</h1><h2>(CDK が npm ecosystem なので、今後 AWS 系のエンジニアにも npm は普及するはず)</h2></section><section class="aligncenter"><h1>メリット</h1><div class="padding"></div><ul><li><h2>何をやっているかわかりやすくするため</h2><ul><li><h4>IaC は読むためにあるので、読みやすさは大事</h4></li></ul></li><li><h2>コマンドのオペミスを減らすため</h2><ul><li><h4>IaC コマンドを手順書からコピー&amp;ペーストしているとそのうち絶対にミスするので</h4></li></ul></li></ul></section><section class="aligncenter"><h1>例</h1><ul><li><h2>GitLab CI Runner の構築</h2></li><li><h2>フロントエンド検証環境の構築</h2></li></ul></section><section class="aligncenter"><h2>なぜ CFn の簡易コマンド化が必要か</h2><div class="padding"></div><ul><li><h4>デプロイ対象や検証環境ごとに権限対象が異なる</h4></li><li><h4>デプロイ対象や検証環境が増えるたびに環境を作成する</h4></li><li><h4>AWS 担当以外の開発者も CFn を触れることで開発を高速化できる</h4></li></ul></section><section class="aligncenter"><h1>Q. CloudFormation にないところはどう実行するか</h1></section><section class="aligncenter"><h1>A. SDK を使って冪等っぽくなるようにたたく</h1></section><section class="aligncenter"><h1>具体例</h1><img src="9e19bf6e8c3682f1d941c2f89eae0bbb.webp" width="960"><ul><li><h2>Fargate の環境変数の ValueFrom (ParameterStore からの取得は)</h2><h2>長らく CFn では記述できなかった</h2><ul><li><h4>現在は実装済み</h4></li></ul></li><li><h2>TaskDefinitions を更新するたびに ただの環境変数に戻ってしまう</h2><ul><li><h4>デプロイの都度、主導で直すのは手間だし、忘れる</h4></li></ul></li></ul></section><section class="aligncenter"><h1>SDK で解決 (冪等になります)</h1><pre><code class="language-typescript">const taskDefinitionFamilies = await ecs.listTaskDefinitionFamilies({ status: &#x27;ACTIVE&#x27; }).promise();
+  if (!taskDefinitionFamilies.families) {
+    throw new Error(&#x27;listTaskDefinitionFamilies failed&#x27;);
+  }
+
+  for (const family of taskDefinitionFamilies.families) {
+    console.log(`${family} task definition update start`);
+    const { taskDefinition } = await ecs.describeTaskDefinition({ taskDefinition: family }).promise();
+    if (!taskDefinition || !taskDefinition.containerDefinitions) {
+      throw new Error(&#x27;describeTaskDefinition failed&#x27;);
+    }
+
+    const { containerDefinitions, executionRoleArn, cpu, memory, taskRoleArn, requiresCompatibilities, networkMode } = taskDefinition;
+
+    const requestContainerDefinitions = containerDefinitions.map((def) =&gt; ({
+      ...def,
+      secrets: [
+        ...(def.secrets || []),
+        ...def
+          .environment!.filter((env) =&gt; envToSecretKeys.includes(env.name!))
+          .map((env) =&gt; ({
+            name: env.name!,
+            valueFrom: env.value!,
+          })),
+      ],
+      environment: def.environment!.filter((env) =&gt; !envToSecretKeys.includes(env.name!)),
+    }));
+</code></pre></section><section class="aligncenter"><h1>Q. CFn の parameter-overrides って実行時エラー出したくない</h1></section><section class="aligncenter"><h1>A. 型安全になるように TypeScript の template から注入する</h1><h2>(quicktype.js を使いました)</h2></section><section class="aligncenter"><p>config.template.yml.ts</p><pre><code class="language-typescript">import { Convert, Env } from &#x27;./env.quicktype&#x27;;
+
+export function prepare(env: string = &#x27;default&#x27;): Env {
+  const envJson = JSON.stringify(require(`./.env.${env}`));
+
+  return Convert.toEnv(envJson);
+}
+
+// language=yaml
+export default ({ envName, nodeEnv, awsAccountId, defaultCpu, defaultMemoryMb }: Env) =&gt; `\
+all:
+  Application: app
+  SSMKeyPrefix: /${envName}/
+...
+</code></pre></section><section class="aligncenter"><p>env.quicktype.ts</p><pre><code class="language-typescript">export interface Env {
+  envName: string;
+  nodeEnv: string;
+  awsAccountId: string;
+  defaultCpu: string;
+  defaultMemoryMb: string;
+}
+</code></pre><p>env.develop.ts</p><pre><code class="language-typescript">import { Env } from &#x27;./env.quicktype&#x27;;
+
+const env: Env = {
+  envName: &#x27;app-dev&#x27;,
+  nodeEnv: &#x27;develop&#x27;,
+  awsAccountId: &#x27;123456789012&#x27;,
+  defaultCpu: &#x27;256&#x27;,
+  defaultMemoryMb: &#x27;512&#x27;
+};
+
+module.exports = env;
+</code></pre><p>materialize-template.ts</p><pre><code class="language-typescript">import * as fs from &#x27;fs&#x27;;
+import { resolve } from &#x27;path&#x27;;
+import main, { prepare } from &#x27;./config.template.yml&#x27;;
+
+const env = process.env.ENV;
+if (!env) {
+  throw new Error(&#x27;$ENV is required&#x27;);
+}
+fs.writeFileSync(resolve(__dirname, `config.${env}.yml`), main(prepare(env)));
+</code></pre></section><section class="aligncenter"><h1>アプリケーション指向の解決方法を実践</h1><div class="padding"></div><h2>。o (モノによっては aws-sdk (node) の型定義がそのままうまく使えるかも？)</h2></section><section class="aligncenter"><h1>実践編まとめ</h1><ul><li><h4>CloudFormation は使うとき/読むときのことを考える</h4></li><li><h4>CloudFormation の限界は SDK を使って超える</h4></li><li><h4>アプリケーション的なアプローチでより効率的かつ安全にする</h4></li></ul></section><section class="aligncenter"><h1>今後の展望</h1><ul><li><h4>CloudFormation の社内普及を進めたい</h4></li><li><h4>CloudFormation のノウハウを言語化して共有したい</h4></li><li><h4>CDK の導入によりアプリケーションエンジニアでも触りやすくしたい</h4></li></ul></section><section class="aligncenter image"><h1>イケている AWS を触りたい方</h1><h1>ぜひ遊びに来てください</h1><img src="efeaafc721f11e776facf7fb528fd1a8.webp"></section></article></div><script type="text/javascript" src="runtime.84804a662899d0a15555.bundle.js"></script><script type="text/javascript" src="vendor.7.1726d34088c6c2e9bc27.bundle.js"></script><script type="text/javascript" src="main.3.4ddbeeb675a33101d08f.bundle.js"></script></body></html>
