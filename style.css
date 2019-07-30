@@ -1,11 +1,15 @@
 #webslides {
   color: #ffffff;
   background-color: #333333ff;
-  background-image: url("./images/slide-templates/bitbank-theme-line-dark.png");
+  background-image: url("./images/slide-templates/bitbank-theme-plain-dark.png");
   background-size: cover;
 }
 
 h1 {
+  color: #23b592;
+}
+
+.text-green {
   color: #23b592;
 }
 

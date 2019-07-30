@@ -14,8 +14,11 @@ slide:
   code:
     languages:
       - javascript
+      - typescript
+      - json
+      - yaml
     plugins: []
-    theme: default
+    theme: tomorrow
   chart: false
   math: false
 extends:

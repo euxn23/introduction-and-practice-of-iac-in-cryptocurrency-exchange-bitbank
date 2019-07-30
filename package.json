@@ -1,29 +1,28 @@
 {
-  "name": "bcu30",
+  "name": "introduction-and-practice-of-iac-in-cryptocurrency-exchange-bitbank",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "start": "fusuma start",
     "build": "fusuma build",
     "build:pdf": "fusuma pdf",
     "live": "fusuma live",
-    "deploy": "yarn build && fusuma deploy"
+    "deploy": "yarn build && fusuma deploy",
+    "format": "prettier --write slides/main.md",
+    "lint": "textlint slides/main.md"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com/euxn23/bcu30.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/euxn23/bcu30/issues"
-  },
-  "homepage": "https://github.com/euxn23/bcu30#readme",
+  "license": "MIT",
   "devDependencies": {
-    "@fusuma/task-live": "^1.9.3",
-    "@fusuma/task-pdf": "^1.9.3",
-    "fusuma": "^1.9.2"
+    "@fusuma/task-live": "^1.14.0",
+    "@fusuma/task-pdf": "^1.14.0",
+    "fusuma": "^1.14.0",
+    "prettier": "^1.18.2",
+    "prettier-cli": "^0.1.0",
+    "prh": "^5.4.3",
+    "textlint": "^11.3.1",
+    "textlint-filter-rule-comments": "^1.2.2",
+    "textlint-rule-preset-ja-technical-writing": "^3.1.3",
+    "textlint-rule-preset-japanese": "^4.0.4",
+    "textlint-rule-prh": "^5.2.1"
   }
 }
